@@ -5,6 +5,8 @@ plugins:
   - jest
   - babel
 
+on: push
+
 env:
   node: true
   jest: true
@@ -19,4 +21,3 @@ extends:
 rules:
   no-console: 0
   import/extensions: 0
-  
