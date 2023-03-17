@@ -1,23 +1,45 @@
----
-root: true
+name: Node CI
 
-plugins:
-  - jest
-  - babel
+# Trigger the workflow on push or pull request
+on:
+  - push
+  - pull_request
 
-on: push
+jobs:
+  build:
 
-env:
-  node: true
-  jest: true
-  browser: true
+    # The type of machine to run the job on
+    runs-on: ubuntu-latest
 
-parser: "@babel/eslint-parser"
+    strategy:
+      # Node versions list
+      matrix:
+        node-version: [18.x]
 
-extends:
-  - "airbnb-base"
-  - "plugin:jest/recommended"
+    steps:
+      # Check-out repository under GitHub workspace
+      # https://github.com/actions/checkout
+      - uses: actions/checkout@v3
+        # Step's name
+      - name: Use Node.js ${{ matrix.node-version }}
+        # Configures the node version used on GitHub-hosted runners
+        # https://github.com/actions/setup-node
+        uses: actions/setup-node@v3
+        # The Node.js version to configure
+        with:
+          node-version: ${{ matrix.node-version }}
 
-rules:
-  no-console: 0
-  import/extensions: 0
+      - name: npm install, build
+        # Install and build project
+        run: |
+          make install
+          make build
+        # Add environment variables
+        env:
+          CI: true
+
+      - name: Run linter
+        run: make lint
+
+      - name: Run tests
+        run: make test
