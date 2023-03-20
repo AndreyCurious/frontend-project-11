@@ -24,8 +24,8 @@ jobs:
 
     - name: build
       run: |
-      make install
-      make build
+        make install
+        make build
     - name: run linter
       run: make lint
       
