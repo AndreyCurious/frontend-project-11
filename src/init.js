@@ -3,6 +3,7 @@ import * as yup from 'yup';
 import i18next from 'i18next';
 import render from './render.js';
 import ru from './locales/ru.js';
+import axios from 'axios';
 
 const i18nextInstance = i18next.createInstance();
 i18nextInstance.init({
@@ -15,11 +16,13 @@ i18nextInstance.init({
   .then(() => {
     document.querySelector('.full-article').textContent = i18nextInstance.t('readFull');
     document.querySelector('.btn-secondary').textContent = i18nextInstance.t('close');
+    document.querySelector('[for="url-input"]').textContent = i18nextInstance.t('link')
     document.querySelector('h1').textContent = i18nextInstance.t('rss');
     document.querySelector('.lead').textContent = i18nextInstance.t('title');
     document.querySelector('.mt-2').textContent = i18nextInstance.t('example');
     document.querySelector('#created').textContent = i18nextInstance.t('created');
-    document.querySelector('.footer>div>div>a').textContent = i18nextInstance.t('hexlet');
+    document.querySelector('.footer>div>div>a').textContent = i18nextInstance.t('me');
+    document.querySelector('[type="submit"]').textContent = i18nextInstance.t('add');
 
     const form = document.querySelector('form');
     const state = {
@@ -43,10 +46,15 @@ i18nextInstance.init({
             state.rssForm.fids.push(result.url);
           }
           watchedState.rssForm.url = result.url;
+          axios.get(result.url)
+          .then(function (response) {
+            console.log(response)
+          })
         })
         .catch((error) => {
           const [nameErr] = error.errors;
           watchedState.rssForm.err = nameErr;
         });
     });
-  });
+  })
+
