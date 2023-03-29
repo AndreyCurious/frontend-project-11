@@ -1,9 +1,10 @@
 import onChange from 'on-change';
 import * as yup from 'yup';
 import i18next from 'i18next';
+import axios from 'axios';
+import path from 'path-browserify';
 import render from './render.js';
 import ru from './locales/ru.js';
-import axios from 'axios';
 
 const i18nextInstance = i18next.createInstance();
 i18nextInstance.init({
@@ -16,7 +17,7 @@ i18nextInstance.init({
   .then(() => {
     document.querySelector('.full-article').textContent = i18nextInstance.t('readFull');
     document.querySelector('.btn-secondary').textContent = i18nextInstance.t('close');
-    document.querySelector('[for="url-input"]').textContent = i18nextInstance.t('link')
+    document.querySelector('[for="url-input"]').textContent = i18nextInstance.t('link');
     document.querySelector('h1').textContent = i18nextInstance.t('rss');
     document.querySelector('.lead').textContent = i18nextInstance.t('title');
     document.querySelector('.mt-2').textContent = i18nextInstance.t('example');
@@ -46,15 +47,16 @@ i18nextInstance.init({
             state.rssForm.fids.push(result.url);
           }
           watchedState.rssForm.url = result.url;
-          axios.get(result.url)
-          .then(function (response) {
-            console.log(response)
-          })
+          const pathName = path.join('https://allorigins.hexlet.app/get?disableCache=true&url=', result.url);
+          console.log(pathName);
+          axios.get(pathName)
+            .then((response) => {
+              console.log(response);
+            });
         })
         .catch((error) => {
           const [nameErr] = error.errors;
           watchedState.rssForm.err = nameErr;
         });
     });
-  })
-
+  });
