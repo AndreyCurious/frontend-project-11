@@ -9,6 +9,9 @@ export default {
     created: 'created by',
     me: 'Andrey Didenko',
     add: 'Добавить',
+    feeds: 'Фиды',
+    posts: 'Посты',
+    view: 'Просмотр',
     errors: {
       url: 'Ссылка должна быть валидным URL',
       notOneOf: 'RSS уже существует',
