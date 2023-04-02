@@ -105,7 +105,7 @@ export const render = (path, value) => {
       btnPost.setAttribute('data-bs-target', '#modal');
       btnPost.setAttribute('data-id', item.idPost);
       btnPost.textContent = i18nextInstance.t('view');
-      console.log(liPost);
+
       liPost.append(link);
       liPost.append(btnPost);
       document.querySelector('.ulPosts').append(liPost);
