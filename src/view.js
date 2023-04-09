@@ -24,7 +24,6 @@ export const startView = () => i18nextInstance.init({
 export const render = (path, value) => {
   const inputForm = document.querySelector('#url-input');
   const err = document.querySelector('.feedback');
-
   if (path === 'rssForm.err') {
     err.classList.remove('text-success');
     err.classList.add('text-danger');
@@ -69,7 +68,8 @@ export const render = (path, value) => {
     ulPosts.classList.add('list-group', 'border-0', 'rounded-0', 'ulPosts');
     cardFeeds.append(ulFeeds);
     cardPosts.append(ulPosts);
-  } else if (path === 'feeds') {
+  } else if (path === 'fullFeeds') {
+    const fragmentFeeds = new DocumentFragment();
     document.querySelector('.ulFeeds').textContent = '';
     value.forEach((item) => {
       const liFeed = document.createElement('li');
@@ -84,9 +84,11 @@ export const render = (path, value) => {
       p.textContent = item.description;
 
       liFeed.append(h3, p);
-      document.querySelector('.ulFeeds').append(liFeed);
+      fragmentFeeds.append(liFeed);
     });
-  } else if (path === 'posts') {
+    document.querySelector('.ulFeeds').append(fragmentFeeds);
+  } else if (path === 'fullPosts') {
+    const fragmentPosts = new DocumentFragment();
     document.querySelector('.ulPosts').textContent = '';
     value.forEach((item) => {
       const liPost = document.createElement('li');
@@ -108,7 +110,20 @@ export const render = (path, value) => {
 
       liPost.append(link);
       liPost.append(btnPost);
-      document.querySelector('.ulPosts').append(liPost);
+      fragmentPosts.append(liPost);
     });
+    document.querySelector('.ulPosts').append(fragmentPosts);
+  } else if (path === 'readWatched') {
+    value.forEach((item) => {
+      document.querySelector(`[data-id="${item.idPost}"]`).classList.remove('fw-bold');
+      document.querySelector(`[data-id="${item.idPost}"]`).classList.add('fw-normal', 'link-secondary');
+    });
+  } else if (path === 'readNow') {
+    document.querySelector(`[data-id="${value[0].idPost}"]`).classList.remove('fw-bold');
+    document.querySelector(`[data-id="${value[0].idPost}"]`).classList.add('fw-normal', 'link-secondary');
+    document.querySelector('.modal-title').textContent = value[0].title;
+    document.querySelector('.modal-body').textContent = value[0].description;
+    const readFull = document.querySelector('.full-article');
+    readFull.setAttribute('href', value[0].link);
   }
 };

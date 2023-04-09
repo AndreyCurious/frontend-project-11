@@ -14,12 +14,21 @@ const state = {
   checkUpdates: 'no',
   feeds: [],
   posts: [],
+  fullPosts: false,
+  fullFeeds: false,
+  readState: [],
+  readWatched: [],
+  readNow: '',
 };
 let uniqIdFeeds = 0;
 let uniqIdPosts = 0;
 const watchedState = onChange(state, render);
+
 const checkUpdates = (links) => {
-  watchedState.posts = [];
+  uniqIdPosts = 0;
+  uniqIdFeeds = 0;
+  state.posts = [];
+  state.fullPosts = [];
   links.forEach((link) => {
     const url = new URL('https://allorigins.hexlet.app/get');
     url.searchParams.set('disableCach', 'true');
@@ -28,12 +37,29 @@ const checkUpdates = (links) => {
       .then((response) => {
         const responseDom = parser(response);
         const posts = responseDom.querySelectorAll('item');
+        uniqIdFeeds += 1;
         posts.forEach((item) => {
           uniqIdPosts += 1;
-          watchedState.posts.push({
-            idFeed: uniqIdFeeds, idPost: uniqIdPosts, title: item.querySelector('title').textContent, link: item.querySelector('link').nextSibling.textContent,
+          state.posts.push({
+            idFeed: uniqIdFeeds, idPost: uniqIdPosts, title: item.querySelector('title').textContent, link: item.querySelector('link').nextSibling.textContent, description: item.querySelector('description').textContent,
           });
         });
+      })
+      .then(() => {
+        watchedState.fullPosts = state.posts;
+        watchedState.readWatched = [];
+        const postsBtn = document.querySelectorAll('li>.btn');
+        postsBtn.forEach((item) => {
+          item.addEventListener('click', () => {
+            const id = item.getAttribute('data-id');
+            const readPost = state.fullPosts.filter((post) => post.idPost === Number(id));
+            watchedState.readNow = readPost;
+            state.readNow = [];
+            state.readState.push(readPost[0]);
+          });
+        });
+        console.log(state.readState);
+        watchedState.readWatched = state.readState;
       })
       .catch((err) => {
         watchedState.rssForm.err = err;
@@ -65,21 +91,38 @@ startView()
               watchedState.rssForm.valid = 'valid';
               const responseDom = parser(response);
               uniqIdFeeds += 1;
-              watchedState.feeds.push({ id: uniqIdFeeds, title: responseDom.querySelector('title').textContent, description: responseDom.querySelector('description').textContent });
+              state.feeds.push({ id: uniqIdFeeds, title: responseDom.querySelector('title').textContent, description: responseDom.querySelector('description').textContent });
               const posts = responseDom.querySelectorAll('item');
               posts.forEach((item) => {
                 uniqIdPosts += 1;
-                watchedState.posts.push({
-                  idFeed: uniqIdFeeds, idPost: uniqIdPosts, title: item.querySelector('title').textContent, link: item.querySelector('link').nextSibling.textContent,
+                state.posts.push({
+                  idFeed: uniqIdFeeds, idPost: uniqIdPosts, title: item.querySelector('title').textContent, link: item.querySelector('link').nextSibling.textContent, description: item.querySelector('description').textContent,
+                });
+              });
+              state.fullPosts = [];
+              state.fullFeeds = [];
+              watchedState.fullPosts = state.posts;
+              watchedState.fullFeeds = state.feeds;
+            })
+            .then(() => {
+              const postsBtn = document.querySelectorAll('li>.btn');
+              postsBtn.forEach((item) => {
+                item.addEventListener('click', () => {
+                  const id = item.getAttribute('data-id');
+                  const readPost = state.fullPosts.filter((post) => post.idPost === Number(id));
+                  watchedState.readNow = readPost;
+                  state.readNow = [];
+                  state.readState.push(readPost[0]);
                 });
               });
             })
             .catch((err) => {
               watchedState.rssForm.err = err;
             });
+
           if (state.checkUpdates === 'no') {
             state.checkUpdates = 'yes';
-            setTimeout(checkUpdates, 5000, state.rssForm.links);
+            checkUpdates(state.rssForm.links);
           }
         })
         .catch((error) => {
