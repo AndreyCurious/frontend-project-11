@@ -58,7 +58,6 @@ const checkUpdates = (links) => {
             state.readState.push(readPost[0]);
           });
         });
-        console.log(state.readState);
         watchedState.readWatched = state.readState;
       })
       .catch((err) => {
@@ -75,20 +74,15 @@ startView()
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const schema = yup.object().shape({
-        url: yup.string().url(i18nextInstance.t('errors.url')).notOneOf(state.rssForm.links, i18nextInstance.t('errors.notOneOf')),
+        url: yup.string().url(i18nextInstance.t('errors.url')).notOneOf(state.rssForm.links, i18nextInstance.t('errors.notOneOf')).required(),
       });
       schema.validate({ url: form.elements.url.value })
         .then((result) => {
-          if (state.rssForm.links.indexOf(result.url) === -1) {
-            state.rssForm.links.push(result.url);
-          }
-          watchedState.rssForm.url = result.url;
           const url = new URL('https://allorigins.hexlet.app/get');
           url.searchParams.set('disableCach', 'true');
           url.searchParams.set('url', result.url);
           axios.get(url)
             .then((response) => {
-              watchedState.rssForm.valid = 'valid';
               const responseDom = parser(response);
               uniqIdFeeds += 1;
               state.feeds.push({ id: uniqIdFeeds, title: responseDom.querySelector('title').textContent, description: responseDom.querySelector('description').textContent });
@@ -99,6 +93,11 @@ startView()
                   idFeed: uniqIdFeeds, idPost: uniqIdPosts, title: item.querySelector('title').textContent, link: item.querySelector('link').nextSibling.textContent, description: item.querySelector('description').textContent,
                 });
               });
+              if (state.rssForm.links.indexOf(result.url) === -1) {
+                state.rssForm.links.push(result.url);
+              }
+              watchedState.rssForm.url = result.url;
+              watchedState.rssForm.valid = 'valid';
               state.fullPosts = [];
               state.fullFeeds = [];
               watchedState.fullPosts = state.posts;
@@ -114,20 +113,24 @@ startView()
                   state.readNow = [];
                   state.readState.push(readPost[0]);
                 });
-              });
+              })
+              if (state.checkUpdates === 'no') {
+                state.checkUpdates = 'yes';
+                checkUpdates(state.rssForm.links);
+              }
             })
             .catch((err) => {
-              watchedState.rssForm.err = err;
-            });
-
-          if (state.checkUpdates === 'no') {
-            state.checkUpdates = 'yes';
-            checkUpdates(state.rssForm.links);
-          }
+              console.log(err)
+              if (err.message === 'Network Error') {
+                watchedState.rssForm.err = i18nextInstance.t('errors.network')
+              } else {
+                watchedState.rssForm.err = i18nextInstance.t('errors.valid')
+              } 
+            })
         })
         .catch((error) => {
-          const [nameErr] = error.errors;
-          watchedState.rssForm.err = nameErr;
+            const [nameErr] = error.errors;
+            watchedState.rssForm.err = nameErr;
         });
     });
   });
