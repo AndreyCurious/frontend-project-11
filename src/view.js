@@ -33,11 +33,12 @@ export const render = (path, value) => {
     inputForm.value = '';
     inputForm.focus();
     inputForm.classList.remove('is-invalid');
+    if (value === 'loadSuccess') {
+      err.classList.remove('text-danger');
+      err.classList.add('text-success');
+      err.textContent = i18nextInstance.t('rssLoad');
+    }
   } else if (path === 'rssForm.valid') {
-    err.classList.remove('text-danger');
-    err.classList.add('text-success');
-    err.textContent = 'RSS успешно загружен';
-
     const feeds = document.querySelector('.feeds');
     const cardFeeds = document.createElement('div');
     cardFeeds.classList.add('card', 'border-0');
