@@ -31,9 +31,10 @@ const checkUpdates = (links) => {
   state.posts = [];
   state.fullPosts = [];
   links.forEach((link) => {
-    const url = new URL('https://allorigins.hexlet.app/get');
+    let url = new URL('https://allorigins.hexlet.app/get');
     url.searchParams.set('disableCach', 'true');
     url.searchParams.set('url', link);
+    url = String(url);
     axios.get(url)
       .then((response) => {
         const responseDom = parser(response);
@@ -82,9 +83,10 @@ startView()
       });
       schema.validate({ url: form.elements.url.value })
         .then((result) => {
-          const url = new URL('https://allorigins.hexlet.app/get');
+          let url = new URL('https://allorigins.hexlet.app/get');
           url.searchParams.set('disableCach', 'true');
           url.searchParams.set('url', result.url);
+          url = String(url);
           axios.get(url)
             .then((response) => {
               const responseDom = parser(response);
