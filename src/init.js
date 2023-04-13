@@ -34,7 +34,7 @@ const checkUpdates = (links) => {
     let url = new URL('https://allorigins.hexlet.app/get');
     url.searchParams.set('disableCach', 'true');
     url.searchParams.set('url', link);
-    url = String(url);
+    url = url.toString();
     axios.get(url)
       .then((response) => {
         const responseDom = parser(response);
@@ -84,7 +84,7 @@ startView()
       schema.validate({ url: form.elements.url.value })
         .then((result) => {
           let url = new URL('https://allorigins.hexlet.app/get');
-          url.searchParams.set('disableCach', 'true');
+          url.searchParams.set('disableCache', 'true');
           url.searchParams.set('url', result.url);
           url = String(url);
           axios.get(url)
