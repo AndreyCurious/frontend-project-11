@@ -32,7 +32,7 @@ const checkUpdates = (links) => {
   state.fullPosts = [];
   links.forEach((link) => {
     let url = new URL('https://allorigins.hexlet.app/get');
-    url.searchParams.set('disableCach', 'true');
+    url.searchParams.set('disableCache', 'true');
     url.searchParams.set('url', link);
     url = url.toString();
     axios.get(url)
