@@ -10,6 +10,7 @@ export const startView = () => i18nextInstance.init({
   },
 })
   .then(() => {
+    // сначала отрисовка всех слов на начальном экране
     document.querySelector('.full-article').textContent = i18nextInstance.t('readFull');
     document.querySelector('.btn-secondary').textContent = i18nextInstance.t('close');
     document.querySelector('[for="url-input"]').textContent = i18nextInstance.t('link');

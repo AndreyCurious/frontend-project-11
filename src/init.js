@@ -25,11 +25,11 @@ let uniqIdPosts = 0;
 const watchedState = onChange(state, render);
 
 const checkUpdates = (links) => {
-  uniqIdPosts = 0;
+  uniqIdPosts = 0; //id переназначаем на каждом обновлении
   uniqIdFeeds = 0;
-  state.postsState = [];
+  state.postsState = []; //обнуляем оба массива
   state.watchedPosts = [];
-  links.forEach((link) => {
+  links.forEach((link) => { //собираем все посты в один массив state.postsState
     let url = new URL('https://allorigins.hexlet.app/get');
     url.searchParams.set('disableCache', 'true');
     url.searchParams.set('url', link);
@@ -48,8 +48,8 @@ const checkUpdates = (links) => {
       })
       .then(() => {
         if (links[links.length - 1] === link) {
-          watchedState.watchedPosts = state.postsState;
-          watchedState.readWatched = [];
+          watchedState.watchedPosts = state.postsState; //отправляем массв на отрисовку
+          watchedState.readWatched = []; // обнуляем прочитанные посты 
 
           const postsBtn = document.querySelectorAll('li>.btn');
           postsBtn.forEach((item) => {
@@ -61,7 +61,7 @@ const checkUpdates = (links) => {
               state.readState.push(readPost[0]);
             });
           });
-          watchedState.readWatched = state.readState;
+          watchedState.readWatched = state.readState; // отрисовывем заново прочитанные посты по массиву id по аналогии с постами 
         }
       })
       .catch((err) => {
@@ -80,37 +80,38 @@ startView()
       const schema = yup.object().shape({
         url: yup.string().url(i18nextInstance.t('errors.url')).notOneOf(state.rssForm.links, i18nextInstance.t('errors.notOneOf')).required(),
       });
-      schema.validate({ url: form.elements.url.value })
+      schema.validate({ url: form.elements.url.value }) 
         .then((result) => {
           let url = new URL('https://allorigins.hexlet.app/get');
           url.searchParams.set('disableCache', 'true');
           url.searchParams.set('url', result.url);
-          url = String(url);
+          url = url.toString();
           axios.get(url)
-            .then((response) => {
+            .then((response) => { // пушим все фиды в отдельный массив
               const responseDom = parser(response);
               uniqIdFeeds += 1;
               state.feedsState.push({ id: uniqIdFeeds, title: responseDom.querySelector('title').textContent, description: responseDom.querySelector('description').textContent });
               const posts = responseDom.querySelectorAll('item');
-              posts.forEach((item) => {
+              posts.forEach((item) => { // пушим все посты в отдельный массив
                 uniqIdPosts += 1;
                 state.postsState.push({
                   idFeed: uniqIdFeeds, idPost: uniqIdPosts, title: item.querySelector('title').textContent, link: item.querySelector('link').nextSibling.textContent, description: item.querySelector('description').textContent,
                 });
               });
-              watchedState.rssForm.valid = 'valid';
+              watchedState.rssForm.valid = 'valid'; // на этом этапе отрисовывем заготовку для списков постов и фидов
 
               if (state.rssForm.links.indexOf(result.url) === -1) {
                 state.rssForm.links.push(result.url);
               }
-              watchedState.rssForm.url = result.url;
-              watchedState.rssForm.url = 'loadSuccess';
-              state.watchedPosts = [];
-              state.watchedFeeds = [];
-              watchedState.watchedPosts = state.postsState;
-              watchedState.watchedFeeds = state.feedsState;
+              watchedState.rssForm.url = result.url; // удалили урл из строки ввода и навели фокус
+              watchedState.rssForm.url = 'loadSuccess'; //отрисовали что rss успешно загружен
+              state.watchedPosts = []; // обнулили посты
+              state.watchedFeeds = []; // обнулили фиды
+              watchedState.watchedPosts = state.postsState; // закидываем на отрисовку массив постов
+              watchedState.watchedFeeds = state.feedsState; // закидываем на отрисовку массив фидов
             })
             .then(() => {
+              //после отрисовки вешаем обработчик на каждую кнопку просмотра постов
               const postsBtn = document.querySelectorAll('li>.btn');
               postsBtn.forEach((item) => {
                 item.addEventListener('click', () => {
@@ -121,12 +122,13 @@ startView()
                   state.readState.push(readPost[0]);
                 });
               });
-              if (state.checkUpdates === 'no') {
+              if (state.checkUpdates === 'no') { // запускаем обновление
                 state.checkUpdates = 'yes';
                 checkUpdates(state.rssForm.links);
               }
             })
             .catch((err) => {
+              // не знал как реализовать разные ошибки, придумал только такой вариант 
               if (err.message === 'Network Error') {
                 watchedState.rssForm.err = i18nextInstance.t('errors.network');
               } else {
