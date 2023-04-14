@@ -13,7 +13,7 @@ const state = {
   },
   checkUpdates: 'no',
   feedsState: [],
-  posts: [],
+  postsState: [],
   fullPosts: false,
   fullFeeds: false,
   readState: [],
@@ -27,7 +27,7 @@ const watchedState = onChange(state, render);
 const checkUpdates = (links) => {
   uniqIdPosts = 0;
   uniqIdFeeds = 0;
-  state.posts = [];
+  state.postsState = [];
   state.fullPosts = [];
   links.forEach((link) => {
     let url = new URL('https://allorigins.hexlet.app/get');
@@ -41,14 +41,14 @@ const checkUpdates = (links) => {
         uniqIdFeeds += 1;
         posts.forEach((item) => {
           uniqIdPosts += 1;
-          state.posts.push({
+          state.postsState.push({
             idFeed: uniqIdFeeds, idPost: uniqIdPosts, title: item.querySelector('title').textContent, link: item.querySelector('link').nextSibling.textContent, description: item.querySelector('description').textContent,
           });
         });
       })
       .then(() => {
         if (links[links.length - 1] === link) {
-          watchedState.fullPosts = state.posts;
+          watchedState.fullPosts = state.postsState;
           watchedState.readWatched = [];
 
           const postsBtn = document.querySelectorAll('li>.btn');
@@ -94,7 +94,7 @@ startView()
               const posts = responseDom.querySelectorAll('item');
               posts.forEach((item) => {
                 uniqIdPosts += 1;
-                state.posts.push({
+                state.postsState.push({
                   idFeed: uniqIdFeeds, idPost: uniqIdPosts, title: item.querySelector('title').textContent, link: item.querySelector('link').nextSibling.textContent, description: item.querySelector('description').textContent,
                 });
               });
@@ -107,7 +107,7 @@ startView()
               watchedState.rssForm.url = 'loadSuccess';
               state.fullPosts = [];
               state.fullFeeds = [];
-              watchedState.fullPosts = state.posts;
+              watchedState.fullPosts = state.postsState;
               watchedState.fullFeeds = state.feedsState;
             })
             .then(() => {
