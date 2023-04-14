@@ -25,11 +25,11 @@ let uniqIdPosts = 0;
 const watchedState = onChange(state, render);
 
 const checkUpdates = (links) => {
-  uniqIdPosts = 0; //id переназначаем на каждом обновлении
+  uniqIdPosts = 0; // id переназначаем на каждом обновлении
   uniqIdFeeds = 0;
-  state.postsState = []; //обнуляем оба массива
+  state.postsState = []; // обнуляем оба массива
   state.watchedPosts = [];
-  links.forEach((link) => { //собираем все посты в один массив state.postsState
+  links.forEach((link) => { // собираем все посты в один массив state.postsState
     let url = new URL('https://allorigins.hexlet.app/get');
     url.searchParams.set('disableCache', 'true');
     url.searchParams.set('url', link);
@@ -48,8 +48,8 @@ const checkUpdates = (links) => {
       })
       .then(() => {
         if (links[links.length - 1] === link) {
-          watchedState.watchedPosts = state.postsState; //отправляем массв на отрисовку
-          watchedState.readWatched = []; // обнуляем прочитанные посты 
+          watchedState.watchedPosts = state.postsState; // отправляем массв на отрисовку
+          watchedState.readWatched = []; // обнуляем прочитанные посты
 
           const postsBtn = document.querySelectorAll('li>.btn');
           postsBtn.forEach((item) => {
@@ -61,7 +61,8 @@ const checkUpdates = (links) => {
               state.readState.push(readPost[0]);
             });
           });
-          watchedState.readWatched = state.readState; // отрисовывем заново прочитанные посты по массиву id по аналогии с постами 
+          // отрисовывем заново прочитанные посты по массиву id по аналогии с постами
+          watchedState.readWatched = state.readState;
         }
       })
       .catch((err) => {
@@ -80,7 +81,7 @@ startView()
       const schema = yup.object().shape({
         url: yup.string().url(i18nextInstance.t('errors.url')).notOneOf(state.rssForm.links, i18nextInstance.t('errors.notOneOf')).required(),
       });
-      schema.validate({ url: form.elements.url.value }) 
+      schema.validate({ url: form.elements.url.value })
         .then((result) => {
           let url = new URL('https://allorigins.hexlet.app/get');
           url.searchParams.set('disableCache', 'true');
@@ -104,14 +105,14 @@ startView()
                 state.rssForm.links.push(result.url);
               }
               watchedState.rssForm.url = result.url; // удалили урл из строки ввода и навели фокус
-              watchedState.rssForm.url = 'loadSuccess'; //отрисовали что rss успешно загружен
+              watchedState.rssForm.url = 'loadSuccess'; // отрисовали что rss успешно загружен
               state.watchedPosts = []; // обнулили посты
               state.watchedFeeds = []; // обнулили фиды
               watchedState.watchedPosts = state.postsState; // закидываем на отрисовку массив постов
               watchedState.watchedFeeds = state.feedsState; // закидываем на отрисовку массив фидов
             })
             .then(() => {
-              //после отрисовки вешаем обработчик на каждую кнопку просмотра постов
+              // после отрисовки вешаем обработчик на каждую кнопку просмотра постов
               const postsBtn = document.querySelectorAll('li>.btn');
               postsBtn.forEach((item) => {
                 item.addEventListener('click', () => {
@@ -128,7 +129,7 @@ startView()
               }
             })
             .catch((err) => {
-              // не знал как реализовать разные ошибки, придумал только такой вариант 
+              // не знал как реализовать разные ошибки, придумал только такой вариант
               if (err.message === 'Network Error') {
                 watchedState.rssForm.err = i18nextInstance.t('errors.network');
               } else {
