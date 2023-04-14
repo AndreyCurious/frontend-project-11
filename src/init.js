@@ -13,7 +13,7 @@ const state = {
   },
   checkUpdates: 'no',
   feedsState: [],
-  postsStat: [],
+  posts: [],
   fullPosts: false,
   fullFeeds: false,
   readState: [],
