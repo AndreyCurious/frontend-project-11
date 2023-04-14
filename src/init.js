@@ -12,8 +12,8 @@ const state = {
     err: '',
   },
   checkUpdates: 'no',
-  feeds: [],
-  posts: [],
+  feedsState: [],
+  postsStat: [],
   fullPosts: false,
   fullFeeds: false,
   readState: [],
@@ -25,7 +25,6 @@ let uniqIdPosts = 0;
 const watchedState = onChange(state, render);
 
 const checkUpdates = (links) => {
-  console.log(state.rssForm.links);
   uniqIdPosts = 0;
   uniqIdFeeds = 0;
   state.posts = [];
@@ -91,7 +90,7 @@ startView()
             .then((response) => {
               const responseDom = parser(response);
               uniqIdFeeds += 1;
-              state.feeds.push({ id: uniqIdFeeds, title: responseDom.querySelector('title').textContent, description: responseDom.querySelector('description').textContent });
+              state.feedsState.push({ id: uniqIdFeeds, title: responseDom.querySelector('title').textContent, description: responseDom.querySelector('description').textContent });
               const posts = responseDom.querySelectorAll('item');
               posts.forEach((item) => {
                 uniqIdPosts += 1;
@@ -109,7 +108,7 @@ startView()
               state.fullPosts = [];
               state.fullFeeds = [];
               watchedState.fullPosts = state.posts;
-              watchedState.fullFeeds = state.feeds;
+              watchedState.fullFeeds = state.feedsState;
             })
             .then(() => {
               const postsBtn = document.querySelectorAll('li>.btn');
@@ -128,7 +127,6 @@ startView()
               }
             })
             .catch((err) => {
-              console.log(err);
               if (err.message === 'Network Error') {
                 watchedState.rssForm.err = i18nextInstance.t('errors.network');
               } else {
