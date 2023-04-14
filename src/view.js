@@ -69,7 +69,7 @@ export const render = (path, value) => {
     ulPosts.classList.add('list-group', 'border-0', 'rounded-0', 'ulPosts');
     cardFeeds.append(ulFeeds);
     cardPosts.append(ulPosts);
-  } else if (path === 'fullFeeds') {
+  } else if (path === 'watchedFeeds') {
     const fragmentFeeds = new DocumentFragment();
     document.querySelector('.ulFeeds').textContent = '';
     value.forEach((item) => {
@@ -88,7 +88,7 @@ export const render = (path, value) => {
       fragmentFeeds.append(liFeed);
     });
     document.querySelector('.ulFeeds').append(fragmentFeeds);
-  } else if (path === 'fullPosts') {
+  } else if (path === 'watchedPosts') {
     const fragmentPosts = new DocumentFragment();
     document.querySelector('.ulPosts').textContent = '';
     value.forEach((item) => {

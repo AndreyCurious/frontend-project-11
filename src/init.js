@@ -14,8 +14,8 @@ const state = {
   checkUpdates: 'no',
   feedsState: [],
   postsState: [],
-  postsWatched: false,
-  feedsWatched: false,
+  watchedPosts: false,
+  watchedFeeds: false,
   readState: [],
   readWatched: [],
   readNow: '',
@@ -28,7 +28,7 @@ const checkUpdates = (links) => {
   uniqIdPosts = 0;
   uniqIdFeeds = 0;
   state.postsState = [];
-  state.postsWatched = [];
+  state.watchedPosts = [];
   links.forEach((link) => {
     let url = new URL('https://allorigins.hexlet.app/get');
     url.searchParams.set('disableCache', 'true');
@@ -48,14 +48,14 @@ const checkUpdates = (links) => {
       })
       .then(() => {
         if (links[links.length - 1] === link) {
-          watchedState.postsWatched = state.postsState;
+          watchedState.watchedPosts = state.postsState;
           watchedState.readWatched = [];
 
           const postsBtn = document.querySelectorAll('li>.btn');
           postsBtn.forEach((item) => {
             item.addEventListener('click', () => {
               const id = item.getAttribute('data-id');
-              const readPost = state.postsWatched.filter((post) => post.idPost === Number(id));
+              const readPost = state.watchedPosts.filter((post) => post.idPost === Number(id));
               watchedState.readNow = readPost;
               state.readNow = [];
               state.readState.push(readPost[0]);
@@ -105,17 +105,17 @@ startView()
               }
               watchedState.rssForm.url = result.url;
               watchedState.rssForm.url = 'loadSuccess';
-              state.postsWatched = [];
-              state.feedsWatched = [];
-              watchedState.postsWatched = state.postsState;
-              watchedState.feedsWatched = state.feedsState;
+              state.watchedPosts = [];
+              state.watchedFeeds = [];
+              watchedState.watchedPosts = state.postsState;
+              watchedState.watchedFeeds = state.feedsState;
             })
             .then(() => {
               const postsBtn = document.querySelectorAll('li>.btn');
               postsBtn.forEach((item) => {
                 item.addEventListener('click', () => {
                   const id = item.getAttribute('data-id');
-                  const readPost = state.postsWatched.filter((post) => post.idPost === Number(id));
+                  const readPost = state.watchedPosts.filter((post) => post.idPost === Number(id));
                   watchedState.readNow = readPost;
                   state.readNow = [];
                   state.readState.push(readPost[0]);
