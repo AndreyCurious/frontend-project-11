@@ -121,11 +121,17 @@ export const render = (path, value) => {
       document.querySelector(`[data-id="${item.idPost}"]`).classList.add('fw-normal', 'link-secondary');
     });
   } else if (path === 'readNow') {
-    document.querySelector(`[data-id="${value[0].idPost}"]`).classList.remove('fw-bold');
-    document.querySelector(`[data-id="${value[0].idPost}"]`).classList.add('fw-normal', 'link-secondary');
+    document.querySelector(`[href="${value[0].link.trim()}"]`).classList.remove('fw-bold');
+    document.querySelector(`[href="${value[0].link}"]`).classList.add('fw-normal', 'link-secondary');
     document.querySelector('.modal-title').textContent = value[0].title;
     document.querySelector('.modal-body').textContent = value[0].description;
     const readFull = document.querySelector('.full-article');
     readFull.setAttribute('href', value[0].link);
+  } else if (path === 'btnDisabled') {
+    if (value === true) {
+      document.querySelector('[type="submit"]').disabled = true;
+    } else {
+      document.querySelector('[type="submit"]').disabled = false;
+    }
   }
 };

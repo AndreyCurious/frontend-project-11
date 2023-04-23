@@ -1,16 +1,19 @@
 import onChange from 'on-change';
 import * as yup from 'yup';
 import axios from 'axios';
+import _ from 'lodash';
 import { render, startView, i18nextInstance } from './view.js';
 import parser from './parser.js';
+
+const delay = 5000;
 
 const state = {
   rssForm: {
     valid: '',
-    links: [],
     url: '',
     err: '',
   },
+  responses: [],
   checkUpdates: 'no',
   feedsState: [],
   postsState: [],
@@ -19,91 +22,106 @@ const state = {
   readState: [],
   readWatched: [],
   readNow: '',
+  btnDisabled: false,
 };
-let uniqIdFeeds = 0;
-let uniqIdPosts = 0;
 const watchedState = onChange(state, render);
 
-const checkUpdates = (links) => {
-  uniqIdPosts = 0; // id переназначаем на каждом обновлении
-  uniqIdFeeds = 0;
-  state.postsState = []; // обнуляем оба массива
-  state.watchedPosts = [];
-  links.forEach((link) => { // собираем все посты в один массив state.postsState
-    let url = new URL('https://allorigins.hexlet.app/get');
-    url.searchParams.set('disableCache', 'true');
-    url.searchParams.set('url', link);
-    url = url.toString();
-    axios.get(url)
-      .then((response) => {
-        const responseDom = parser(response);
-        const posts = responseDom.querySelectorAll('item');
-        uniqIdFeeds += 1;
-        posts.forEach((item) => {
-          uniqIdPosts += 1;
-          state.postsState.push({
-            idFeed: uniqIdFeeds, idPost: uniqIdPosts, title: item.querySelector('title').textContent, link: item.querySelector('link').nextSibling.textContent, description: item.querySelector('description').textContent,
-          });
-        });
-      })
-      .then(() => {
-        if (links[links.length - 1] === link) {
-          watchedState.watchedPosts = state.postsState; // отправляем массв на отрисовку
-          watchedState.readWatched = []; // обнуляем прочитанные посты
+const createUrl = (link) => {
+  let url = new URL('https://allorigins.hexlet.app/get');
+  url.searchParams.set('disableCache', 'true');
+  url.searchParams.set('url', link);
+  url = url.toString();
+  return url;
+};
 
-          const postsBtn = document.querySelectorAll('li>.btn');
-          postsBtn.forEach((item) => {
-            item.addEventListener('click', () => {
-              const id = item.getAttribute('data-id');
-              const readPost = state.watchedPosts.filter((post) => post.idPost === Number(id));
-              watchedState.readNow = readPost;
-              state.readNow = [];
-              state.readState.push(readPost[0]);
-            });
-          });
-          // отрисовывем заново прочитанные посты по массиву id по аналогии с постами
-          watchedState.readWatched = state.readState;
-        }
-      })
-      .catch((err) => {
-        watchedState.rssForm.err = err;
-      });
+const pushPost = (newPost, idFeed) => {
+  state.postsState.push({
+    idFeed, idPost: _.uniqueId(), title: newPost.querySelector('title').textContent, link: newPost.querySelector('link').nextSibling.textContent.trim(), description: newPost.querySelector('description').textContent,
   });
-  setTimeout(checkUpdates, 5000, state.rssForm.links);
+};
+
+const handlerWatchBtn = () => {
+  const postsBtns = document.querySelectorAll('li>.btn');
+  postsBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const closestLink = btn.previousSibling;
+      const link = closestLink.getAttribute('href');
+      const readPost = state.watchedPosts.filter((post) => post.link === link);
+      watchedState.readNow = readPost;
+      state.readNow = [];
+      state.readState.push(readPost[0]);
+    });
+  });
+};
+
+const checkUpdates = (links) => {
+  state.responses = [];
+  links.forEach((link) => {
+    const url = createUrl(link);
+    state.responses.push(axios.get(url));
+  });
+  Promise.all(state.responses)
+    .then((responses) => {
+      responses.forEach((response) => {
+        const responseDom = parser(response);
+        const oldTitles = [];
+        document.querySelectorAll('li>a').forEach((link) => oldTitles.push(link.textContent));
+        const newTitles = [];
+        responseDom.querySelectorAll('item>title').forEach((title) => newTitles.push(title.textContent));
+        const { id } = state.watchedFeeds
+          .filter((feed) => feed.url === response.data.status.url)[0];
+        newTitles.forEach((newTitle) => {
+          if (oldTitles.indexOf(newTitle) === -1) {
+            responseDom.querySelector('item').forEach((post) => {
+              if (post.querySelector('title').textContent === newTitle) {
+                pushPost(post, id);
+              }
+            });
+          }
+        });
+      });
+    })
+    .then(() => {
+      state.watchedPosts = [];
+      watchedState.watchedPosts = state.postsState;
+    })
+    .then(() => {
+      handlerWatchBtn();
+      watchedState.readWatched = [];
+      watchedState.readWatched = state.readState;
+    })
+    .then(() => {
+      setTimeout(checkUpdates, delay, links);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 };
 
 startView()
   .then(() => {
     const form = document.querySelector('form');
-
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+      watchedState.btnDisabled = true; // выключаем кнопку добавить
       const schema = yup.object().shape({
-        url: yup.string().url(i18nextInstance.t('errors.url')).notOneOf(state.rssForm.links, i18nextInstance.t('errors.notOneOf')).required(),
+        url: yup.string().url(i18nextInstance.t('errors.url')).notOneOf(state.feedsState.map((feed) => feed.url), i18nextInstance.t('errors.notOneOf')).required(),
       });
       schema.validate({ url: form.elements.url.value })
         .then((result) => {
-          let url = new URL('https://allorigins.hexlet.app/get');
-          url.searchParams.set('disableCache', 'true');
-          url.searchParams.set('url', result.url);
-          url = url.toString();
+          const url = createUrl(result.url);
           axios.get(url)
             .then((response) => { // пушим все фиды в отдельный массив
               const responseDom = parser(response);
-              uniqIdFeeds += 1;
-              state.feedsState.push({ id: uniqIdFeeds, title: responseDom.querySelector('title').textContent, description: responseDom.querySelector('description').textContent });
+              const idFeed = _.uniqueId();
+              state.feedsState.push({
+                id: idFeed, title: responseDom.querySelector('title').textContent, description: responseDom.querySelector('description').textContent, url: result.url,
+              });
               const posts = responseDom.querySelectorAll('item');
-              posts.forEach((item) => { // пушим все посты в отдельный массив
-                uniqIdPosts += 1;
-                state.postsState.push({
-                  idFeed: uniqIdFeeds, idPost: uniqIdPosts, title: item.querySelector('title').textContent, link: item.querySelector('link').nextSibling.textContent, description: item.querySelector('description').textContent,
-                });
+              posts.forEach((post) => { // пушим все посты в отдельный массив
+                pushPost(post, idFeed);
               });
               watchedState.rssForm.valid = 'valid'; // на этом этапе отрисовывем заготовку для списков постов и фидов
-
-              if (state.rssForm.links.indexOf(result.url) === -1) {
-                state.rssForm.links.push(result.url);
-              }
               watchedState.rssForm.url = result.url; // удалили урл из строки ввода и навели фокус
               watchedState.rssForm.url = 'loadSuccess'; // отрисовали что rss успешно загружен
               state.watchedPosts = []; // обнулили посты
@@ -112,20 +130,14 @@ startView()
               watchedState.watchedFeeds = state.feedsState; // закидываем на отрисовку массив фидов
             })
             .then(() => {
+              watchedState.btnDisabled = false; // включаем кнопку "добавить" обратно
+            })
+            .then(() => {
               // после отрисовки вешаем обработчик на каждую кнопку просмотра постов
-              const postsBtn = document.querySelectorAll('li>.btn');
-              postsBtn.forEach((item) => {
-                item.addEventListener('click', () => {
-                  const id = item.getAttribute('data-id');
-                  const readPost = state.watchedPosts.filter((post) => post.idPost === Number(id));
-                  watchedState.readNow = readPost;
-                  state.readNow = [];
-                  state.readState.push(readPost[0]);
-                });
-              });
+              handlerWatchBtn();
               if (state.checkUpdates === 'no') { // запускаем обновление
                 state.checkUpdates = 'yes';
-                checkUpdates(state.rssForm.links);
+                checkUpdates(state.feedsState.map((feed) => feed.url));
               }
             })
             .catch((err) => {
@@ -135,11 +147,13 @@ startView()
               } else {
                 watchedState.rssForm.err = i18nextInstance.t('errors.valid');
               }
+              watchedState.btnDisabled = false;
             });
         })
         .catch((error) => {
           const [nameErr] = error.errors;
           watchedState.rssForm.err = nameErr;
+          watchedState.btnDisabled = false;
         });
     });
   });
