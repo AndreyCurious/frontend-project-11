@@ -70,7 +70,7 @@ export const render = (path, value) => {
     ulPosts.classList.add('list-group', 'border-0', 'rounded-0', 'ulPosts');
     cardFeeds.append(ulFeeds);
     cardPosts.append(ulPosts);
-  } else if (path === 'watchedFeeds') {
+  } else if (path === 'feeds') {
     const fragmentFeeds = new DocumentFragment();
     document.querySelector('.ulFeeds').textContent = '';
     value.forEach((item) => {
@@ -89,33 +89,36 @@ export const render = (path, value) => {
       fragmentFeeds.append(liFeed);
     });
     document.querySelector('.ulFeeds').append(fragmentFeeds);
-  } else if (path === 'watchedPosts') {
+  } else if (path === 'posts') {
     const fragmentPosts = new DocumentFragment();
-    document.querySelector('.ulPosts').textContent = '';
-    value.forEach((item) => {
-      const liPost = document.createElement('li');
-      liPost.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
-      const link = document.createElement('a');
-      link.setAttribute('data-id', item.idPost);
-      link.classList.add('fw-bold');
-      link.setAttribute('target', '_blank');
-      link.setAttribute('rel', 'noopener noreferrer');
-      link.setAttribute('href', item.link);
-      link.textContent = item.title;
+    if (document.querySelector('.ulPosts') !== null) {
+      document.querySelector('.ulPosts').textContent = '';
+      value.forEach((item) => {
+        const liPost = document.createElement('li');
+        liPost.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
+        const link = document.createElement('a');
+        link.setAttribute('data-id', item.idPost);
+        link.classList.add('fw-bold');
+        link.setAttribute('target', '_blank');
+        link.setAttribute('rel', 'noopener noreferrer');
+        link.setAttribute('href', item.link);
+        link.textContent = item.title;
 
-      const btnPost = document.createElement('button');
-      btnPost.classList.add('btn', 'btn-outline-primary', 'btn-sm');
-      btnPost.setAttribute('data-bs-toggle', 'modal');
-      btnPost.setAttribute('data-bs-target', '#modal');
-      btnPost.setAttribute('data-id', item.idPost);
-      btnPost.textContent = i18nextInstance.t('view');
+        const btnPost = document.createElement('button');
+        btnPost.classList.add('btn', 'btn-outline-primary', 'btn-sm');
+        btnPost.setAttribute('data-bs-toggle', 'modal');
+        btnPost.setAttribute('data-bs-target', '#modal');
+        btnPost.setAttribute('data-id', item.idPost);
+        btnPost.textContent = i18nextInstance.t('view');
 
-      liPost.append(link);
-      liPost.append(btnPost);
-      fragmentPosts.append(liPost);
-    });
-    document.querySelector('.ulPosts').append(fragmentPosts);
+        liPost.append(link);
+        liPost.append(btnPost);
+        fragmentPosts.append(liPost);
+      });
+      document.querySelector('.ulPosts').append(fragmentPosts);
+    }
   } else if (path === 'readWatched') {
+    console.log(value);
     value.forEach((item) => {
       document.querySelector(`[data-id="${item.idPost}"]`).classList.remove('fw-bold');
       document.querySelector(`[data-id="${item.idPost}"]`).classList.add('fw-normal', 'link-secondary');

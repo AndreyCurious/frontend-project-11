@@ -9,16 +9,12 @@ const delay = 5000;
 
 const state = {
   rssForm: {
-    valid: '',
+    valid: 'invalid',
     url: '',
     err: '',
   },
-  responses: [],
-  checkUpdates: 'no',
-  feedsState: [],
-  postsState: [],
-  watchedPosts: false,
-  watchedFeeds: false,
+  posts: [],
+  feeds: [],
   readState: [],
   readWatched: [],
   readNow: '',
@@ -31,13 +27,17 @@ const createUrl = (link) => {
   url.searchParams.set('disableCache', 'true');
   url.searchParams.set('url', link);
   url = url.toString();
+  if (url[url.length - 1] === 'F') {
+    return url.slice(0, -3);
+  }
   return url;
 };
 
-const pushPost = (newPost, idFeed) => {
-  state.postsState.push({
+const pushPost = (newPost, idFeed, postArr) => {
+  postArr.push({
     idFeed, idPost: _.uniqueId(), title: newPost.querySelector('title').textContent, link: newPost.querySelector('link').nextSibling.textContent.trim(), description: newPost.querySelector('description').textContent,
   });
+  return postArr;
 };
 
 const handlerWatchBtn = () => {
@@ -46,7 +46,7 @@ const handlerWatchBtn = () => {
     btn.addEventListener('click', () => {
       const closestLink = btn.previousSibling;
       const link = closestLink.getAttribute('href');
-      const readPost = state.watchedPosts.filter((post) => post.link === link);
+      const readPost = state.posts.filter((post) => post.link === link);
       watchedState.readNow = readPost;
       state.readNow = [];
       state.readState.push(readPost[0]);
@@ -55,42 +55,36 @@ const handlerWatchBtn = () => {
 };
 
 const checkUpdates = (links) => {
-  state.responses = [];
-  links.forEach((link) => {
-    const url = createUrl(link);
-    state.responses.push(axios.get(url));
-  });
-  Promise.all(state.responses)
+  const responsesPromises = links.map((link) => axios.get(createUrl(link)));
+  Promise.all(responsesPromises)
     .then((responses) => {
+      const postsArr = [];
       responses.forEach((response) => {
         const responseDom = parser(response);
         const oldTitles = [];
         document.querySelectorAll('li>a').forEach((link) => oldTitles.push(link.textContent));
         const newTitles = [];
         responseDom.querySelectorAll('item>title').forEach((title) => newTitles.push(title.textContent));
-        const { id } = state.watchedFeeds
+        const id = state.feeds
           .filter((feed) => feed.url === response.data.status.url)[0];
         newTitles.forEach((newTitle) => {
           if (oldTitles.indexOf(newTitle) === -1) {
             responseDom.querySelector('item').forEach((post) => {
               if (post.querySelector('title').textContent === newTitle) {
-                pushPost(post, id);
+                pushPost(post, id, postsArr);
               }
             });
           }
         });
       });
-    })
-    .then(() => {
-      state.watchedPosts = [];
-      watchedState.watchedPosts = state.postsState;
-    })
-    .then(() => {
+      const result = [...postsArr, ...state.posts];
+      watchedState.posts = result;
+
       handlerWatchBtn();
-      watchedState.readWatched = [];
+
+      state.readWatched = [];
       watchedState.readWatched = state.readState;
-    })
-    .then(() => {
+
       setTimeout(checkUpdates, delay, links);
     })
     .catch((err) => {
@@ -98,62 +92,62 @@ const checkUpdates = (links) => {
     });
 };
 
-startView()
-  .then(() => {
-    const form = document.querySelector('form');
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      watchedState.btnDisabled = true; // выключаем кнопку добавить
-      const schema = yup.object().shape({
-        url: yup.string().url(i18nextInstance.t('errors.url')).notOneOf(state.feedsState.map((feed) => feed.url), i18nextInstance.t('errors.notOneOf')).required(),
-      });
-      schema.validate({ url: form.elements.url.value })
-        .then((result) => {
-          const url = createUrl(result.url);
-          axios.get(url)
-            .then((response) => { // пушим все фиды в отдельный массив
-              const responseDom = parser(response);
-              const idFeed = _.uniqueId();
-              state.feedsState.push({
-                id: idFeed, title: responseDom.querySelector('title').textContent, description: responseDom.querySelector('description').textContent, url: result.url,
-              });
-              const posts = responseDom.querySelectorAll('item');
-              posts.forEach((post) => { // пушим все посты в отдельный массив
-                pushPost(post, idFeed);
-              });
-              watchedState.rssForm.valid = 'valid'; // на этом этапе отрисовывем заготовку для списков постов и фидов
-              watchedState.rssForm.url = result.url; // удалили урл из строки ввода и навели фокус
-              watchedState.rssForm.url = 'loadSuccess'; // отрисовали что rss успешно загружен
-              state.watchedPosts = []; // обнулили посты
-              state.watchedFeeds = []; // обнулили фиды
-              watchedState.watchedPosts = state.postsState; // закидываем на отрисовку массив постов
-              watchedState.watchedFeeds = state.feedsState; // закидываем на отрисовку массив фидов
-            })
-            .then(() => {
-              watchedState.btnDisabled = false; // включаем кнопку "добавить" обратно
-            })
-            .then(() => {
-              // после отрисовки вешаем обработчик на каждую кнопку просмотра постов
-              handlerWatchBtn();
-              if (state.checkUpdates === 'no') { // запускаем обновление
-                state.checkUpdates = 'yes';
-                checkUpdates(state.feedsState.map((feed) => feed.url));
-              }
-            })
-            .catch((err) => {
-              // не знал как реализовать разные ошибки, придумал только такой вариант
-              if (err.message === 'Network Error') {
-                watchedState.rssForm.err = i18nextInstance.t('errors.network');
-              } else {
-                watchedState.rssForm.err = i18nextInstance.t('errors.valid');
-              }
-              watchedState.btnDisabled = false;
-            });
-        })
-        .catch((error) => {
-          const [nameErr] = error.errors;
-          watchedState.rssForm.err = nameErr;
-          watchedState.btnDisabled = false;
+export default () => {
+  startView()
+    .then(() => {
+      checkUpdates(state.feeds.map((feed) => feed.url));
+      const form = document.querySelector('form');
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        watchedState.btnDisabled = true; // выключаем кнопку добавить
+        const url = createUrl(form.elements.url.value);
+        const schema = yup.object().shape({
+          url: yup.string().url(i18nextInstance.t('errors.url')).notOneOf(state.feeds.map((feed) => feed.url), i18nextInstance.t('errors.notOneOf')).required(),
         });
+        schema.validate({ url })
+          .then((result) => {
+            axios.get(result.url)
+              .then((response) => { // пушим все фиды в отдельный массив
+                const responseDom = parser(response);
+                const idFeed = _.uniqueId();
+                const feedsArr = [];
+                feedsArr.push({
+                  id: idFeed, title: responseDom.querySelector('title').textContent, description: responseDom.querySelector('description').textContent, url: result.url,
+                });
+                const posts = responseDom.querySelectorAll('item');
+                const postArr = [];
+                posts.forEach((post) => { // пушим все посты в отдельный массив
+                  pushPost(post, idFeed, postArr);
+                });
+
+                watchedState.rssForm.valid = 'valid'; // на этом этапе отрисовывем заготовку для списков постов и фидов
+                watchedState.rssForm.url = result.url; // удалили урл из строки ввода и навели фокус
+                watchedState.rssForm.url = 'loadSuccess'; // отрисовали что rss успешно загружен
+                state.posts = []; // обнулили посты
+                state.feeds = []; // обнулили фиды
+                watchedState.posts = postArr; // закидываем на отрисовку массив постов
+                watchedState.feeds = feedsArr; // закидываем на отрисовку массив фидов
+
+                watchedState.btnDisabled = false; // включаем кнопку "добавить" обратно
+
+                handlerWatchBtn();
+              })
+
+              .catch((err) => {
+              // не знал как реализовать разные ошибки, придумал только такой вариант
+                if (err.message === 'Network Error') {
+                  watchedState.rssForm.err = i18nextInstance.t('errors.network');
+                } else {
+                  watchedState.rssForm.err = i18nextInstance.t('errors.valid');
+                }
+                watchedState.btnDisabled = false;
+              });
+          })
+          .catch((error) => {
+            const [nameErr] = error.errors;
+            watchedState.rssForm.err = nameErr;
+            watchedState.btnDisabled = false;
+          });
+      });
     });
-  });
+};
