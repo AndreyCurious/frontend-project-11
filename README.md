@@ -9,3 +9,11 @@ node  js v18 +
 
 ## link
 https://frontend-project-11-2ik5.vercel.app/
+
+Copy repository and install the dependencies.
+
+```sh
+git clone git@github.com:AndreyCurious/frontend-project-11.git
+cd frontend-project-11/
+make install
+```
