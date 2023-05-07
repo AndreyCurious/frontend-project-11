@@ -21,15 +21,12 @@ const state = {
 };
 const watchedState = onChange(state, render);
 
-const addId = (posts, id) => {
-  return posts.map((post) => {
-    const copyPost = { ...post };
-    copyPost.idFeed = id;
-    copyPost.idPost = _.uniqueId();
-    return copyPost;
-  });
-  
-}
+const addId = (posts, id) => posts.map((post) => {
+  const copyPost = { ...post };
+  copyPost.idFeed = id;
+  copyPost.idPost = _.uniqueId();
+  return copyPost;
+});
 
 const createUrl = (link) => {
   let url = new URL('https://allorigins.hexlet.app/get');
