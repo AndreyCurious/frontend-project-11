@@ -21,6 +21,16 @@ const state = {
 };
 const watchedState = onChange(state, render);
 
+const addId = (posts, id) => {
+  return posts.map((post) => {
+    const copyPost = { ...post };
+    copyPost.idFeed = id;
+    copyPost.idPost = _.uniqueId();
+    return copyPost;
+  });
+  
+}
+
 const createUrl = (link) => {
   let url = new URL('https://allorigins.hexlet.app/get');
   url.searchParams.set('disableCache', 'true');
@@ -47,6 +57,8 @@ const handlerWatchBtn = () => {
 };
 
 const checkUpdates = (links) => {
+  console.log(state.feeds)
+  console.log(state.posts.all)
   const promisesOfResponses = links.map((url) => axios.get(createUrl(url)));
   Promise.all(promisesOfResponses)
     .then((responses) => {
@@ -69,12 +81,7 @@ const checkUpdates = (links) => {
           }
         });
 
-        const postWithIds = newPosts.map((post) => {
-          const copyPost = { ...post };
-          copyPost.idFeed = id;
-          copyPost.idPost = _.uniqueId();
-          return copyPost;
-        });
+        const postWithIds = addId(newPosts, id);
         watchedState.posts = {
           all: [...state.posts.all, ...postWithIds],
           readed: state.posts.readed,
@@ -125,12 +132,8 @@ export default () => {
                   return copyFeed;
                 });
 
-                const postWithIds = posts.map((post) => {
-                  const copyPost = { ...post };
-                  copyPost.idFeed = idFeed;
-                  copyPost.idPost = _.uniqueId();
-                  return copyPost;
-                });
+                const postWithIds = addId(posts, idFeed);
+                console.log(postWithIds)
                 watchedState.posts = {
                   all: [...state.posts.all, ...postWithIds],
                   readed: state.posts.readed,
