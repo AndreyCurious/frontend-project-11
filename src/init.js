@@ -57,8 +57,6 @@ const handlerWatchBtn = () => {
 };
 
 const checkUpdates = (links) => {
-  console.log(state.feeds)
-  console.log(state.posts.all)
   const promisesOfResponses = links.map((url) => axios.get(createUrl(url)));
   Promise.all(promisesOfResponses)
     .then((responses) => {
@@ -133,7 +131,6 @@ export default () => {
                 });
 
                 const postWithIds = addId(posts, idFeed);
-                console.log(postWithIds)
                 watchedState.posts = {
                   all: [...state.posts.all, ...postWithIds],
                   readed: state.posts.readed,
