@@ -18,6 +18,7 @@ export default {
       notOneOf: 'RSS уже существует',
       network: 'Ошибка сети',
       valid: 'Ресурс не содержит валидный RSS',
+      unableToParse: 'Неизвестная ошибка. Попробуйте еще раз!',
     },
 
   },
