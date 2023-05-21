@@ -115,9 +115,9 @@ export default () => {
                 if (err.message === 'Network Error') {
                   watchedState.err = i18nextInstance.t('errors.network');
                 } else if (err.message === 'unableToParse') {
-                  watchedState.err = i18nextInstance.t('errors.unableToParse');
-                } else {
                   watchedState.err = i18nextInstance.t('errors.valid');
+                } else {
+                  watchedState.err = i18nextInstance.t('errors.mistake');
                 }
               });
           })
