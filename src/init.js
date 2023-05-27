@@ -1,52 +1,59 @@
 import * as yup from 'yup';
 import axios from 'axios';
 import _ from 'lodash';
-import { watch, startView, i18nextInstance } from './view.js';
+import { watch, startAppInterface, i18nextInstance } from './view.js';
 import parser from './parser.js';
 
 const delay = 5000;
 
 const state = {
-  validForm: '',
-  err: '',
+  validForm: 'waitingData',
+  err: null,
 
-  stateForm: 'filling',
+  addRssProcessState: 'filling',
 
   posts: [],
   feeds: [],
   readedPostsIds: [],
-  modalWindow: '',
+  modalWindowId: '',
 };
 export const watchedState = watch(state);
 
-const addId = (posts, id) => posts.map((post) => {
-  const copyPost = { ...post };
-  copyPost.idFeed = id;
-  copyPost.idPost = _.uniqueId();
-  return copyPost;
-});
+const createSchema = () => {
+  const schema = yup.object().shape({
+    url: yup.string().url(i18nextInstance.t('errors.url')).notOneOf(state.feeds.map((feed) => feed.url), i18nextInstance.t('errors.notOneOf')).required(),
+  });
+  return schema;
+};
+
+const addIdForPosts = (posts, id) => posts.map((post) => ({
+  ...post,
+  idFeed: id,
+  idPost: _.uniqueId(),
+}));
+
+const getProxiedUrl = (link) => {
+  const url = new URL('https://allorigins.hexlet.app/get');
+  url.searchParams.set('url', link);
+  url.searchParams.set('disableCache', true);
+  return url.href;
+};
 
 const createUrl = (link) => {
   const checkSlash = (item) => (item.endsWith('/') ? item.slice(0, -1) : item);
-  let url = new URL('https://allorigins.hexlet.app/get');
-  url.searchParams.set('disableCache', 'true');
-  url.searchParams.set('url', checkSlash(link));
-  url = url.toString();
-  if (url[url.length - 1] === 'F') {
-    return url.slice(0, -3);
-  }
+  const url = getProxiedUrl(checkSlash(link));
+
   return url;
 };
 
-const addBtnForPosts = () => {
-  const postsBtns = document.querySelectorAll('li>.btn');
-  postsBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const closestLink = btn.previousSibling;
-      const id = closestLink.getAttribute('data-id');
-      state.readedPostsIds.push(id);
-      watchedState.modalWindow = id;
-    });
+const addEventForPosts = () => {
+  const posts = document.querySelector('.ulPosts');
+  posts.addEventListener('click', (e) => {
+    const btn = e.target;
+    const closestLink = btn.previousSibling;
+    const id = closestLink.getAttribute('data-id');
+    state.readedPostsIds.push(id);
+    watchedState.modalWindowId = id;
   });
 };
 
@@ -56,41 +63,34 @@ const checkUpdates = (links) => {
     .then((responses) => {
       responses.forEach((response) => {
         const { posts } = parser(response);
-        const newTitles = [];
-        posts.forEach((post) => newTitles.push(post.title));
-        const newPosts = [];
+
         const { id } = state.feeds
-          .filter((feed) => feed.url === response.data.status.url)[0];
-        state.posts.forEach((oldPost) => {
-          if (newTitles.indexOf(oldPost.title) === -1) {
-            posts.forEach((newPost) => {
-              if (newPost.title === oldPost.title) {
-                newPosts.push(newPost);
-              }
-            });
-          }
-        });
-        const postWithIds = addId(newPosts, id);
+          .find((feed) => feed.url === response.data.status.url);
+
+        const feedPosts = state.posts.filter((post) => post.feedId === id);
+
+        const newPosts = posts
+          .filter((newPost) => !(feedPosts.some((feedPost) => feedPost.title === newPost.title)));
+
+        const postWithIds = addIdForPosts(newPosts, id);
         watchedState.posts = [...state.posts, ...postWithIds];
 
-        addBtnForPosts();
+        addEventForPosts();
       });
       setTimeout(checkUpdates, delay, state.feeds.map((feed) => feed.url));
-    }).catch((err) => console.log(err));
+    }).catch((err) => console.error(err));
 };
 
 export default () => {
-  startView()
+  startAppInterface()
     .then(() => {
       checkUpdates(state.feeds.map((feed) => feed.url));
       const rssForm = document.querySelector('form');
       rssForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        watchedState.stateForm = 'processing';
+        watchedState.addRssProcessState = 'processing';
         const url = rssForm.elements.url.value;
-        const schema = yup.object().shape({
-          url: yup.string().url(i18nextInstance.t('errors.url')).notOneOf(state.feeds.map((feed) => feed.url), i18nextInstance.t('errors.notOneOf')).required(),
-        });
+        const schema = createSchema();
         schema.validate({ url })
           .then((result) => {
             watchedState.validForm = 'valid';
@@ -101,17 +101,17 @@ export default () => {
                 const idFeed = _.uniqueId();
 
                 feed.idFeed = idFeed;
-                const postWithIds = addId(posts, idFeed);
+                const postWithIds = addIdForPosts(posts, idFeed);
 
                 watchedState.posts = [...state.posts, ...postWithIds];
                 watchedState.feeds.push(feed);
 
-                addBtnForPosts();
+                addEventForPosts();
 
-                watchedState.stateForm = 'success';
+                watchedState.addRssProcessState = 'success';
               })
               .catch((err) => {
-                watchedState.stateForm = 'failed';
+                watchedState.addRssProcessState = 'failed';
                 if (err.message === 'Network Error') {
                   watchedState.err = i18nextInstance.t('errors.network');
                 } else if (err.message === 'unableToParse') {
@@ -122,7 +122,7 @@ export default () => {
               });
           })
           .catch((err) => {
-            watchedState.stateForm = 'failed';
+            watchedState.addRssProcessState = 'failed';
             const [nameErr] = err.errors;
             watchedState.validForm = 'invalid';
             watchedState.err = nameErr;

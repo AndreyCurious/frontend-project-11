@@ -1,21 +1,30 @@
 export default (response, url) => {
-  const responseDom = new DOMParser().parseFromString(response.data.contents, 'text/html');
-
-  try {
-    const feed = {
-      title: responseDom.querySelector('title').textContent, description: responseDom.querySelector('description').textContent, url,
-    };
-
-    const responsePosts = responseDom.querySelectorAll('item');
-    const posts = [];
-    responsePosts.forEach((responsePost) => {
-      posts.push({
-        title: responsePost.querySelector('title').textContent, link: responsePost.querySelector('link').nextSibling.textContent.trim(), description: responsePost.querySelector('description').textContent,
-      });
-    });
-    return { posts, feed };
-  } catch (e) {
+  const responseDom = new DOMParser().parseFromString(response.data.contents, 'text/xml');
+  const errorNode = responseDom.querySelector('parsererror');
+  if (errorNode) {
+    const e = new Error();
+    e.name = errorNode.textContent;
     e.message = 'unableToParse';
     throw e;
   }
+  const titleFeed = responseDom.querySelector('title').textContent;
+  const descriptionFeed = responseDom.querySelector('description').textContent;
+  const feed = {
+    title: titleFeed,
+    description: descriptionFeed,
+    url,
+  };
+
+  const responsePosts = Array.from(responseDom.querySelectorAll('item'));
+  const posts = responsePosts.map((responsePost) => {
+    const titlePost = responsePost.querySelector('title').textContent;
+    const linkPost = responsePost.querySelector('link').textContent;
+    const descriptionPost = responsePost.querySelector('description').textContent;
+    return {
+      title: titlePost,
+      link: linkPost,
+      description: descriptionPost,
+    };
+  });
+  return { posts, feed };
 };

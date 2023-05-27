@@ -1,14 +1,12 @@
 import i18next from 'i18next';
 import onChange from 'on-change';
-import ru from './locales/ru';
+import resources from './locales';
 
 export const i18nextInstance = i18next.createInstance();
-export const startView = () => i18nextInstance.init({
+export const startAppInterface = () => i18nextInstance.init({
   lng: 'ru',
   debug: true,
-  resources: {
-    ru,
-  },
+  resources,
 }).then(() => {
   document.querySelector('.full-article').textContent = i18nextInstance.t('readFull');
   document.querySelector('.btn-secondary').textContent = i18nextInstance.t('close');
@@ -21,7 +19,7 @@ export const startView = () => i18nextInstance.init({
   document.querySelector('[type="submit"]').textContent = i18nextInstance.t('add');
 });
 
-const valid = (value) => {
+const validate = (value) => {
   const inputForm = document.querySelector('#url-input');
   if (value === 'valid') {
     inputForm.classList.remove('is-invalid');
@@ -30,18 +28,18 @@ const valid = (value) => {
   }
 };
 
-const status = (stateForm) => {
+const changePage = (addRssProcessState) => {
   const err = document.querySelector('.feedback');
   const inputForm = document.querySelector('#url-input');
-  if (stateForm === 'processing') {
+  if (addRssProcessState === 'processing') {
     err.classList.remove('text-danger');
     err.textContent = '';
     document.querySelector('[type="submit"]').disabled = true;
-  } else if (stateForm === 'failed') {
+  } else if (addRssProcessState === 'failed') {
     err.classList.add('text-danger');
     err.classList.remove('text-success');
     document.querySelector('[type="submit"]').disabled = false;
-  } else if (stateForm === 'success') {
+  } else if (addRssProcessState === 'success') {
     err.classList.remove('text-danger');
     err.classList.add('text-success');
     document.querySelector('[type="submit"]').disabled = false;
@@ -135,8 +133,9 @@ const viewPosts = (posts, state) => {
   cardPosts.append(ulPosts);
 };
 
-const modalWindow = (id, state) => {
-  const openedPost = state.posts.filter((post) => post.idPost === id)[0];
+const openModalWindow = (id, state) => {
+  const openedPost = state.posts.find((post) => post.idPost === id);
+
   document.querySelector(`[href="${openedPost.link.trim()}"]`).classList.remove('fw-bold');
   document.querySelector(`[href="${openedPost.link}"]`).classList.add('fw-normal', 'link-secondary');
 
@@ -153,13 +152,12 @@ const errShow = (valueErr) => {
 
 export const watch = (state) => onChange(state, (path, value) => {
   const mapping = {
-    validForm: (valueValid) => valid(valueValid),
+    validForm: (valueValid) => validate(valueValid),
     err: (valueErr) => errShow(valueErr),
-    stateForm: (valueState) => status(valueState),
+    addRssProcessState: (valueState) => changePage(valueState),
     posts: (valuePosts, stateApp) => viewPosts(valuePosts, stateApp),
     feeds: (valueFeeds) => viewFeeds(valueFeeds),
-    modalWindow: (valueModal, stateApp) => modalWindow(valueModal, stateApp),
-
+    modalWindowId: (valueModal, stateApp) => openModalWindow(valueModal, stateApp),
   };
   mapping[path](value, state);
 });
