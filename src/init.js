@@ -8,7 +8,7 @@ const delay = 5000;
 
 const state = {
   validForm: 'waitingData',
-  err: null,
+  errorApp: null,
 
   addRssProcessState: 'filling',
 
@@ -78,7 +78,7 @@ const checkUpdates = (links) => {
         addEventForPosts();
       });
       setTimeout(checkUpdates, delay, state.feeds.map((feed) => feed.url));
-    }).catch((err) => console.error(err));
+    }).catch((error) => console.error(error));
 };
 
 export default () => {
@@ -110,22 +110,22 @@ export default () => {
 
                 watchedState.addRssProcessState = 'success';
               })
-              .catch((err) => {
+              .catch((error) => {
                 watchedState.addRssProcessState = 'failed';
-                if (err.message === 'Network Error') {
-                  watchedState.err = i18nextInstance.t('errors.network');
-                } else if (err.message === 'unableToParse') {
-                  watchedState.err = i18nextInstance.t('errors.valid');
+                if (error.message === 'Network Error') {
+                  watchedState.errorApp = i18nextInstance.t('errors.network');
+                } else if (error.message === 'unableToParse') {
+                  watchedState.errorApp = i18nextInstance.t('errors.valid');
                 } else {
-                  watchedState.err = i18nextInstance.t('errors.mistake');
+                  watchedState.errorApp = i18nextInstance.t('errors.mistake');
                 }
               });
           })
-          .catch((err) => {
+          .catch((error) => {
             watchedState.addRssProcessState = 'failed';
-            const [nameErr] = err.errors;
+            const [nameErr] = error.errors;
             watchedState.validForm = 'invalid';
-            watchedState.err = nameErr;
+            watchedState.errorApp = nameErr;
           });
       });
     });

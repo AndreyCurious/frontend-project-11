@@ -153,7 +153,7 @@ const errShow = (valueErr) => {
 export const watch = (state) => onChange(state, (path, value) => {
   const mapping = {
     validForm: (valueValid) => validate(valueValid),
-    err: (valueErr) => errShow(valueErr),
+    errorApp: (valueErr) => errShow(valueErr),
     addRssProcessState: (valueState) => changePage(valueState),
     posts: (valuePosts, stateApp) => viewPosts(valuePosts, stateApp),
     feeds: (valueFeeds) => viewFeeds(valueFeeds),
