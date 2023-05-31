@@ -19,7 +19,7 @@ export const startAppInterface = () => i18nextInstance.init({
   document.querySelector('[type="submit"]').textContent = i18nextInstance.t('add');
 });
 
-const validate = (value) => {
+const setValidClass = (value) => {
   const inputForm = document.querySelector('#url-input');
   if (value === 'valid') {
     inputForm.classList.remove('is-invalid');
@@ -49,9 +49,9 @@ const changePage = (addRssProcessState) => {
   }
 };
 
-const viewFeeds = (feeds) => {
+const drawsFeeds = (feeds) => {
   const feedsHtml = document.querySelector('.feeds');
-  feedsHtml.textContent = '';
+
   const cardFeeds = document.createElement('div');
   cardFeeds.classList.add('card', 'border-0');
   const cardBodyFeeds = document.createElement('div');
@@ -60,7 +60,6 @@ const viewFeeds = (feeds) => {
   h2Feeds.classList.add('card-title', 'h4');
   cardBodyFeeds.append(h2Feeds);
   cardFeeds.append(cardBodyFeeds);
-  feedsHtml.append(cardFeeds);
   h2Feeds.textContent = i18nextInstance.t('feeds');
 
   const ulFeeds = document.createElement('ul');
@@ -83,11 +82,12 @@ const viewFeeds = (feeds) => {
   });
 
   cardFeeds.append(ulFeeds);
+  feedsHtml.replaceChildren(cardFeeds);
 };
 
-const viewPosts = (posts, state) => {
+const drawsPosts = (posts, state) => {
   const postsHtml = document.querySelector('.posts');
-  postsHtml.textContent = '';
+
   const cardPosts = document.createElement('div');
   cardPosts.classList.add('card', 'border-0');
   const cardBodyPosts = document.createElement('div');
@@ -96,7 +96,6 @@ const viewPosts = (posts, state) => {
   h2Posts.classList.add('card-title', 'h4');
   cardBodyPosts.append(h2Posts);
   cardPosts.append(cardBodyPosts);
-  postsHtml.append(cardPosts);
   h2Posts.textContent = i18nextInstance.t('posts');
 
   const ulPosts = document.createElement('ul');
@@ -106,9 +105,9 @@ const viewPosts = (posts, state) => {
     const liPost = document.createElement('li');
     liPost.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
     const link = document.createElement('a');
-    link.setAttribute('data-id', item.idPost);
+    link.setAttribute('data-id', item.id);
 
-    if (state.readedPostsIds.indexOf(item.idPost) === -1) {
+    if (state.readedPostsIds.indexOf(item.id) === -1) {
       link.classList.add('fw-bold');
     } else {
       link.classList.add('fw-normal', 'link-secondary');
@@ -123,7 +122,7 @@ const viewPosts = (posts, state) => {
     btnPost.classList.add('btn', 'btn-outline-primary', 'btn-sm');
     btnPost.setAttribute('data-bs-toggle', 'modal');
     btnPost.setAttribute('data-bs-target', '#modal');
-    btnPost.setAttribute('data-id', item.idPost);
+    btnPost.setAttribute('data-id', item.id);
     btnPost.textContent = i18nextInstance.t('view');
 
     liPost.append(link);
@@ -131,10 +130,11 @@ const viewPosts = (posts, state) => {
     ulPosts.append(liPost);
   });
   cardPosts.append(ulPosts);
+  postsHtml.replaceChildren(cardPosts);
 };
 
 const openModalWindow = (id, state) => {
-  const openedPost = state.posts.find((post) => post.idPost === id);
+  const openedPost = state.posts.find((post) => post.id === id);
 
   document.querySelector(`[href="${openedPost.link.trim()}"]`).classList.remove('fw-bold');
   document.querySelector(`[href="${openedPost.link}"]`).classList.add('fw-normal', 'link-secondary');
@@ -145,18 +145,18 @@ const openModalWindow = (id, state) => {
   readFull.setAttribute('href', openedPost.link);
 };
 
-const errShow = (valueErr) => {
+const showError = (valueErr) => {
   const err = document.querySelector('.feedback');
   err.textContent = valueErr;
 };
 
 export const watch = (state) => onChange(state, (path, value) => {
   const mapping = {
-    validForm: (valueValid) => validate(valueValid),
-    errorApp: (valueErr) => errShow(valueErr),
+    validForm: (valueValid) => setValidClass(valueValid),
+    errorApp: (valueErr) => showError(valueErr),
     addRssProcessState: (valueState) => changePage(valueState),
-    posts: (valuePosts, stateApp) => viewPosts(valuePosts, stateApp),
-    feeds: (valueFeeds) => viewFeeds(valueFeeds),
+    posts: (valuePosts, stateApp) => drawsPosts(valuePosts, stateApp),
+    feeds: (valueFeeds) => drawsFeeds(valueFeeds),
     modalWindowId: (valueModal, stateApp) => openModalWindow(valueModal, stateApp),
   };
   mapping[path](value, state);

@@ -1,5 +1,5 @@
-export default (response, url) => {
-  const responseDom = new DOMParser().parseFromString(response.data.contents, 'text/xml');
+export default (content) => {
+  const responseDom = new DOMParser().parseFromString(content, 'text/xml');
   const errorNode = responseDom.querySelector('parsererror');
   if (errorNode) {
     const e = new Error();
@@ -12,7 +12,6 @@ export default (response, url) => {
   const feed = {
     title: titleFeed,
     description: descriptionFeed,
-    url,
   };
 
   const responsePosts = Array.from(responseDom.querySelectorAll('item'));
