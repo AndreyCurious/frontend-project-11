@@ -11,6 +11,18 @@ const createSchema = (state) => {
   return schema;
 };
 
+const addEventForPosts = (state, watchedState) => {
+  const posts = document.querySelector('.ulPosts');
+  posts.addEventListener('click', (e) => {
+    const btn = e.target;
+    const closestLink = btn.previousSibling;
+    const id = closestLink.getAttribute('data-id');
+    state.readedPostsIds.push(id);
+    state.readedPostsIds = Array.from(new Set(state.readedPostsIds));
+    watchedState.modalWindowId = id;
+  });
+};
+
 const addIdForPosts = (posts, id) => posts.map((post) => ({
   ...post,
   idFeed: id,
@@ -31,6 +43,37 @@ const createUrl = (link) => {
   return url;
 };
 
+const checkUpdates = (delay, links, state, watchedState) => {
+  const promisesOfResponses = links.map((url) => axios.get(createUrl(url)));
+  Promise.all(promisesOfResponses)
+    .then((responses) => {
+      responses.forEach((response) => {
+        const { posts } = parser(response.data.contents);
+
+        const { id } = state.feeds
+          .find((feed) => feed.url === response.data.status.url);
+
+        const feedPosts = state.posts.filter((post) => post.feedId === id);
+
+        const newPosts = posts
+          .filter((newPost) => !(feedPosts.some((feedPost) => feedPost.title === newPost.title)));
+
+        const postWithIds = addIdForPosts(newPosts, id);
+        watchedState.posts = [...state.posts, ...postWithIds];
+
+        addEventForPosts(state, watchedState);
+      });
+      setTimeout(
+        checkUpdates,
+        delay,
+        delay,
+        state.feeds.map((feed) => feed.url),
+        state,
+        watchedState,
+      );
+    }).catch((error) => console.error(error));
+};
+
 export default () => {
   const state = {
     validForm: 'waitingData',
@@ -47,48 +90,9 @@ export default () => {
   const delay = 5000;
   const watchedState = watch(state);
 
-  const addEventForPosts = () => {
-    const posts = document.querySelector('.ulPosts');
-    posts.addEventListener('click', (e) => {
-      const btn = e.target;
-      const closestLink = btn.previousSibling;
-      const id = closestLink.getAttribute('data-id');
-      state.readedPostsIds.push(id);
-      state.readedPostsIds = Array.from(new Set(state.readedPostsIds));
-      watchedState.modalWindowId = id;
-    });
-  };
-  const checkUpdates = (links) => {
-    const promisesOfResponses = links.map((url) => axios.get(createUrl(url)));
-    Promise.all(promisesOfResponses)
-      .then((responses) => {
-        responses.forEach((response) => {
-          const { posts } = parser(response.data.contents);
-
-          const { id } = state.feeds
-            .find((feed) => feed.url === response.data.status.url);
-
-          const feedPosts = state.posts.filter((post) => post.feedId === id);
-
-          const newPosts = posts
-            .filter((newPost) => !(feedPosts.some((feedPost) => feedPost.title === newPost.title)));
-
-          const postWithIds = addIdForPosts(newPosts, id);
-          watchedState.posts = [...state.posts, ...postWithIds];
-
-          addEventForPosts();
-        });
-        setTimeout(
-          checkUpdates,
-          delay,
-          state.feeds.map((feed) => feed.url),
-        );
-      }).catch((error) => console.error(error));
-  };
-
   startAppInterface()
     .then(() => {
-      checkUpdates(state.feeds.map((feed) => feed.url));
+      checkUpdates(delay, state.feeds.map((feed) => feed.url), state, watchedState);
       const rssForm = document.querySelector('form');
       rssForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -112,7 +116,7 @@ export default () => {
                 watchedState.posts = [...state.posts, ...postWithIds];
                 watchedState.feeds.push(feed);
 
-                addEventForPosts();
+                addEventForPosts(state, watchedState);
 
                 watchedState.addRssProcessState = 'success';
               })
