@@ -4,21 +4,23 @@ import _ from 'lodash';
 import { watch, startAppInterface, i18nextInstance } from './view.js';
 import parser from './parser.js';
 
-const createSchema = (state) => {
-  const schema = yup.object().shape({
-    url: yup.string().url(i18nextInstance.t('errors.url')).notOneOf(state.feeds.map((feed) => feed.url), i18nextInstance.t('errors.notOneOf')).required(),
-  });
-  return schema;
+const validateUrl = (url, feeds) => {
+  const feedUrl = feeds.map((feed) => feed.url);
+  const schema = yup.string().url('url').notOneOf(feedUrl, 'notOneOf').required();
+  return schema.validate(url)
+    .then(() => null)
+    .catch((e) => e.message);
 };
 
-const addEventForPosts = (state, watchedState) => {
+const addEventForPosts = (state) => {
+  const watchedState = watch(state);
   const posts = document.querySelector('.ulPosts');
   posts.addEventListener('click', (e) => {
     const btn = e.target;
     const closestLink = btn.previousSibling;
     const id = closestLink.getAttribute('data-id');
-    state.readedPostsIds.push(id);
-    state.readedPostsIds = Array.from(new Set(state.readedPostsIds));
+    state.readedPostsIds.add(id);
+
     watchedState.modalWindowId = id;
   });
 };
@@ -43,7 +45,9 @@ const createUrl = (link) => {
   return url;
 };
 
-const checkUpdates = (delay, links, state, watchedState) => {
+const checkUpdates = (delay, state) => {
+  const watchedState = watch(state);
+  const links = state.feeds.map((feed) => feed.url);
   const promisesOfResponses = links.map((url) => axios.get(createUrl(url)));
   Promise.all(promisesOfResponses)
     .then((responses) => {
@@ -60,16 +64,12 @@ const checkUpdates = (delay, links, state, watchedState) => {
 
         const postWithIds = addIdForPosts(newPosts, id);
         watchedState.posts = [...state.posts, ...postWithIds];
-
-        addEventForPosts(state, watchedState);
       });
       setTimeout(
         checkUpdates,
         delay,
         delay,
-        state.feeds.map((feed) => feed.url),
         state,
-        watchedState,
       );
     }).catch((error) => console.error(error));
 };
@@ -83,7 +83,7 @@ export default () => {
 
     posts: [],
     feeds: [],
-    readedPostsIds: [],
+    readedPostsIds: new Set(),
     modalWindowId: '',
   };
 
@@ -92,50 +92,50 @@ export default () => {
 
   startAppInterface()
     .then(() => {
-      checkUpdates(delay, state.feeds.map((feed) => feed.url), state, watchedState);
+      checkUpdates(delay, state);
       const rssForm = document.querySelector('form');
       rssForm.addEventListener('submit', (e) => {
         e.preventDefault();
         watchedState.addRssProcessState = 'processing';
         const url = rssForm.elements.url.value;
-        const schema = createSchema(state);
-        schema.validate({ url })
-          .then((result) => {
-            watchedState.validForm = 'valid';
-            const fullUrl = createUrl(result.url);
-            axios.get(fullUrl)
-              .then((response) => {
-                const { posts, feed } = parser(response.data.contents);
-                feed.url = result.url;
+        validateUrl(url, state.feeds)
+          .then((error) => {
+            if (!error) {
+              watchedState.validForm = 'valid';
+              const fullUrl = createUrl(url);
+              axios.get(fullUrl)
+                .then((response) => {
+                  const { posts, feed } = parser(response.data.contents);
+                  feed.url = url;
 
-                const idFeed = _.uniqueId();
+                  const idFeed = _.uniqueId();
 
-                feed.idFeed = idFeed;
-                const postWithIds = addIdForPosts(posts, idFeed);
+                  feed.idFeed = idFeed;
+                  const postWithIds = addIdForPosts(posts, idFeed);
 
-                watchedState.posts = [...state.posts, ...postWithIds];
-                watchedState.feeds.push(feed);
+                  watchedState.posts = [...state.posts, ...postWithIds];
+                  if (state.feeds.length === 0) {
+                    addEventForPosts(state);
+                  }
+                  watchedState.feeds.push(feed);
 
-                addEventForPosts(state, watchedState);
-
-                watchedState.addRssProcessState = 'success';
-              })
-              .catch((error) => {
-                watchedState.addRssProcessState = 'failed';
-                if (error.message === 'Network Error') {
-                  watchedState.errorApp = i18nextInstance.t('errors.network');
-                } else if (error.message === 'unableToParse') {
-                  watchedState.errorApp = i18nextInstance.t('errors.valid');
-                } else {
-                  watchedState.errorApp = i18nextInstance.t('errors.mistake');
-                }
-              });
-          })
-          .catch((error) => {
-            watchedState.addRssProcessState = 'failed';
-            const [nameErr] = error.errors;
-            watchedState.validForm = 'invalid';
-            watchedState.errorApp = nameErr;
+                  watchedState.addRssProcessState = 'success';
+                })
+                .catch((err) => {
+                  watchedState.addRssProcessState = 'failed';
+                  if (err.message === 'Network Error') {
+                    watchedState.errorApp = i18nextInstance.t('errors.network');
+                  } else if (err.message === 'unableToParse') {
+                    watchedState.errorApp = i18nextInstance.t('errors.valid');
+                  } else {
+                    watchedState.errorApp = i18nextInstance.t('errors.mistake');
+                  }
+                });
+            } else {
+              watchedState.addRssProcessState = 'failed';
+              watchedState.validForm = 'invalid';
+              watchedState.errorApp = i18nextInstance.t(`errors.${error}`);
+            }
           });
       });
     });

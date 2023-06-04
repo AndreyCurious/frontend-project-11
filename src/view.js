@@ -86,20 +86,27 @@ const drawsFeeds = (feeds) => {
 };
 
 const drawsPosts = (posts, state) => {
-  const postsHtml = document.querySelector('.posts');
+  if (state.feeds.length === 0) {
+    const postsHtml = document.querySelector('.posts');
 
-  const cardPosts = document.createElement('div');
-  cardPosts.classList.add('card', 'border-0');
-  const cardBodyPosts = document.createElement('div');
-  cardBodyPosts.classList.add('card-body');
-  const h2Posts = document.createElement('h2');
-  h2Posts.classList.add('card-title', 'h4');
-  cardBodyPosts.append(h2Posts);
-  cardPosts.append(cardBodyPosts);
-  h2Posts.textContent = i18nextInstance.t('posts');
+    const cardPosts = document.createElement('div');
+    cardPosts.classList.add('card', 'border-0');
+    const cardBodyPosts = document.createElement('div');
+    cardBodyPosts.classList.add('card-body');
+    const h2Posts = document.createElement('h2');
+    h2Posts.classList.add('card-title', 'h4');
+    cardBodyPosts.append(h2Posts);
+    cardPosts.append(cardBodyPosts);
+    h2Posts.textContent = i18nextInstance.t('posts');
 
-  const ulPosts = document.createElement('ul');
-  ulPosts.classList.add('list-group', 'border-0', 'rounded-0', 'ulPosts');
+    const ulPosts = document.createElement('ul');
+    ulPosts.classList.add('list-group', 'border-0', 'rounded-0', 'ulPosts');
+
+    cardPosts.append(ulPosts);
+    postsHtml.append(cardPosts);
+  }
+
+  const fragment = new DocumentFragment();
 
   posts.forEach((item) => {
     const liPost = document.createElement('li');
@@ -107,10 +114,10 @@ const drawsPosts = (posts, state) => {
     const link = document.createElement('a');
     link.setAttribute('data-id', item.id);
 
-    if (state.readedPostsIds.indexOf(item.id) === -1) {
-      link.classList.add('fw-bold');
-    } else {
+    if (state.readedPostsIds.has(item.id)) {
       link.classList.add('fw-normal', 'link-secondary');
+    } else {
+      link.classList.add('fw-bold');
     }
 
     link.setAttribute('target', '_blank');
@@ -127,10 +134,9 @@ const drawsPosts = (posts, state) => {
 
     liPost.append(link);
     liPost.append(btnPost);
-    ulPosts.append(liPost);
+    fragment.append(liPost);
   });
-  cardPosts.append(ulPosts);
-  postsHtml.replaceChildren(cardPosts);
+  document.querySelector('.ulPosts').replaceChildren(fragment);
 };
 
 const openModalWindow = (id, state) => {
